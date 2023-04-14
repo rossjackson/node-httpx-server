@@ -1,0 +1,36 @@
+{
+    "ts-node": {
+        "transpileOnly": true,
+        "compilerOptions": {
+            "emitDecoratorMetadata": true,
+            "downlevelIteration": true,
+            "experimentalDecorators": true,
+            "allowJs": true,
+            "module": "commonjs"
+        }
+    },
+    "compilerOptions": {
+        "allowJs": true,
+        "esModuleInterop": true,
+        "strict": true,
+        "strictPropertyInitialization": false,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "module": "commonjs",
+        "removeComments": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "target": "es2019",
+        "sourceMap": true,
+        "outDir": "./dist",
+        "incremental": true,
+        "skipLibCheck": true,
+        "strictNullChecks": true,
+        "noEmit": false
+    },
+    "exclude": ["dist", "node_modules"]
+}
