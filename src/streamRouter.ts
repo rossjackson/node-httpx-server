@@ -17,7 +17,7 @@ class StreamRouter {
             this.routers.set([path, method], callbacks)
         }
 
-    load = ({
+    process = ({
         currentPath,
         onComplete,
         onError,

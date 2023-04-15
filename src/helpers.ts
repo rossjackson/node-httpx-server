@@ -1,4 +1,5 @@
 import { IncomingHttpHeaders, ServerHttp2Stream, constants } from 'http2'
+import { routerError } from './constants'
 import { CompleteProps, ErrorProps } from './httpxServer'
 import StreamRouter from './streamRouter'
 
@@ -57,7 +58,7 @@ export const recurseCallbacks = ({
         onError<TError>({ error, stream: source.stream })
     const handleNext = () => {
         if (callback instanceof StreamRouter) {
-            callback.load({
+            callback.process({
                 currentPath: truncatedPath,
                 onComplete,
                 onError,
@@ -77,7 +78,7 @@ export const recurseCallbacks = ({
     }
 
     if (callback instanceof StreamRouter) {
-        callback.load({
+        callback.process({
             currentPath: truncatedPath,
             onComplete,
             onError,
@@ -109,27 +110,49 @@ export const processRoutes = ({
     routers,
     source,
 }: ProcessRoutesProps) => {
-    for (const [[path, method], callbacks] of routers.entries()) {
-        if ((currentPath.indexOf(path) ?? -1) === -1) {
-            continue
+    const routeEntry = [...routers.entries()].find(
+        ([[path, method], callbacks]) => {
+            /**
+             * If currentPath contains path, check if its a nested route
+             * If nestedRoute, return true
+             * else check if current path is the exact route for path
+             */
+            let pathFound = false
+            if ((currentPath.indexOf(path) ?? -1) > -1) {
+                let nestedRoute = callbacks.some(
+                    (callback) => callback instanceof StreamRouter
+                )
+                if (!nestedRoute) pathFound = currentPath === path
+            }
+
+            return (
+                pathFound &&
+                (!method ||
+                    source.headers[constants.HTTP2_HEADER_METHOD] === method)
+            )
         }
+    )
 
-        if (
-            !!method &&
-            source.headers[constants.HTTP2_HEADER_METHOD] !== method
-        )
-            continue
-
-        recurseCallbacks({
-            callbacks,
-            onComplete,
-            onError,
-            source,
-            truncatedPath:
-                currentPath.length === path.length
-                    ? '/'
-                    : currentPath.substring(path.length),
+    if (!routeEntry) {
+        const notFoundError = new Error('Not found')
+        notFoundError.name = routerError.NOT_FOUND
+        onError({
+            error: notFoundError,
+            stream: source.stream,
         })
-        break
+        return
     }
+
+    const [[path], callbacks] = routeEntry
+
+    recurseCallbacks({
+        callbacks,
+        onComplete,
+        onError,
+        source,
+        truncatedPath:
+            currentPath.length === path.length
+                ? '/'
+                : currentPath.substring(path.length),
+    })
 }

@@ -18,6 +18,8 @@ export interface ErrorProps<TError = Error> {
 
 export interface HttpxServerProps {
     httpxServer: Http2Server
+    onComplete?: ({ message, stream }: CompleteProps) => void
+    onError?: <TError = Error>({ error, stream }: ErrorProps<TError>) => void
     port?: number
     hostname?: string
 }
@@ -25,32 +27,31 @@ export interface HttpxServerProps {
 class HttpxServer {
     private httpxServer: Http2Server
     private routers: Map<[string, string?], RoutersValueType[]>
+    complete: ({ message, stream }: CompleteProps) => void
+    error: <TError = Error>({ error, stream }: ErrorProps<TError>) => void
     port: number
     hostname: string
 
     constructor({
         httpxServer,
+        onComplete = ({ stream, message }) => {
+            stream.end(message)
+        },
+        onError = ({ error, stream }) => {
+            stream.end((error as Error).message)
+        },
         port = 8080,
         hostname = 'localhost',
     }: HttpxServerProps) {
         this.httpxServer = httpxServer
         this.routers = new Map<[string], RoutersValueType[]>()
+        this.complete = onComplete
+        this.error = onError
         this.port = port
         this.hostname = hostname
     }
 
-    complete = ({ message, stream }: CompleteProps) => {
-        this.unload()
-        stream.end(message)
-    }
-
-    error = <TError = Error>({ error, stream }: ErrorProps<TError>) => {
-        console.log(error)
-        // handleError
-        stream.end()
-    }
-
-    load = () => {
+    serve = () => {
         this.httpxServer.on('stream', (stream, headers, flags) => {
             const headerPath = headers[constants.HTTP2_HEADER_PATH] as
                 | string
@@ -60,6 +61,7 @@ class HttpxServer {
                     error: new Error(':path missing'),
                     stream,
                 })
+
                 return
             }
             processRoutes({
@@ -81,10 +83,6 @@ class HttpxServer {
         ...callbacks: (StreamRouter | StreamRouterCallbackType)[]
     ) => {
         this.routers.set([path], callbacks)
-    }
-
-    unload = () => {
-        console.log('unload called.')
     }
 }
 
