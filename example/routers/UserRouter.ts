@@ -10,8 +10,9 @@ usersRouter.get('/', auth, ({ source, complete }) => {
     })
 })
 
-usersRouter.get('/{id}', auth, async ({ source, complete }) => {
+usersRouter.get('/{id}', auth, async ({ source, pathParameters, complete }) => {
     const { stream } = source
+    console.log(pathParameters?.id)
     stream.write('inside usersRouter', () => {
         complete()
     })

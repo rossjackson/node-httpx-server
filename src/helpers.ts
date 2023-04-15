@@ -18,16 +18,19 @@ export type MethodType =
     | 'POST'
     | 'PUT'
 
-export interface StreamRouterCallbackProps<TError = Error> {
+export type PathParametersType = Record<string, string>
+
+export interface StreamRouterCallbackProps {
     /**
      * Calls unload() and stream.end()
      * @param {string | undefined} message Last message to send out
      * @returns {void}
      */
     complete: (message?: string) => void
-    error: (props: TError) => void
+    error: <TError extends Error>(props: TError) => void
     next: VoidFunction
     source: StreamSourceProps
+    pathParameters?: PathParametersType
 }
 
 export type StreamRouterCallbackType = (
@@ -39,7 +42,8 @@ export type RoutersValueType = StreamRouter | StreamRouterCallbackType
 export interface HttpxServerRecurseCallbacksProps {
     callbacks: RoutersValueType[]
     onComplete: (props: CompleteProps) => void
-    onError: <TError = Error>(props: ErrorProps<TError>) => void
+    onError: <TError extends Error>(props: ErrorProps<TError>) => void
+    pathParameters?: PathParametersType
     source: StreamSourceProps
     truncatedPath: string
 }
@@ -48,13 +52,14 @@ export const recurseCallbacks = ({
     callbacks,
     onComplete,
     onError,
+    pathParameters,
     source,
     truncatedPath,
 }: HttpxServerRecurseCallbacksProps) => {
     const [callback, ...restOfCallbacks] = callbacks
     const handleComplete = (message?: string) =>
         onComplete({ message, stream: source.stream })
-    const handleError = <TError = Error>(error: TError) =>
+    const handleError = <TError extends Error>(error: TError) =>
         onError<TError>({ error, stream: source.stream })
     const handleNext = () => {
         if (callback instanceof StreamRouter) {
@@ -62,6 +67,7 @@ export const recurseCallbacks = ({
                 currentPath: truncatedPath,
                 onComplete,
                 onError,
+                pathParameters,
                 source,
             })
             return
@@ -72,6 +78,7 @@ export const recurseCallbacks = ({
             callbacks: restOfCallbacks,
             onComplete,
             onError,
+            pathParameters,
             source,
             truncatedPath,
         })
@@ -82,6 +89,7 @@ export const recurseCallbacks = ({
             currentPath: truncatedPath,
             onComplete,
             onError,
+            pathParameters,
             source,
         })
         return
@@ -91,6 +99,7 @@ export const recurseCallbacks = ({
         complete: handleComplete,
         error: handleError,
         next: handleNext,
+        pathParameters,
         source,
     })
 }
@@ -98,7 +107,8 @@ export const recurseCallbacks = ({
 export interface ProcessRoutesProps {
     currentPath: string
     onComplete: (props: CompleteProps) => void
-    onError: <TError = Error>(props: ErrorProps<TError>) => void
+    onError: <TError extends Error>(props: ErrorProps<TError>) => void
+    pathParameters?: PathParametersType
     routers: Map<[string, string?], RoutersValueType[]>
     source: StreamSourceProps
 }
@@ -107,22 +117,40 @@ export const processRoutes = ({
     currentPath,
     onComplete,
     onError,
+    pathParameters,
     routers,
     source,
 }: ProcessRoutesProps) => {
     const routeEntry = [...routers.entries()].find(
         ([[path, method], callbacks]) => {
+            let pathFound = false
+
+            const currentPathArr = currentPath.split('/').slice(1)
+            const pathArr = path.split('/').slice(1)
+
             /**
-             * If currentPath contains path, check if its a nested route
-             * If nestedRoute, return true
+             * If currentPath contains key path from router, check if its a nested route
+             * If nestedRoute, return true (let the next recurse handle it)
              * else check if current path is the exact route for path
              */
-            let pathFound = false
-            if ((currentPath.indexOf(path) ?? -1) > -1) {
+            if (currentPathArr[0] === pathArr[0]) {
                 let nestedRoute = callbacks.some(
                     (callback) => callback instanceof StreamRouter
                 )
-                if (!nestedRoute) pathFound = currentPath === path
+
+                if (!nestedRoute)
+                    // must be an exact route
+                    pathFound = currentPath.length === pathArr.length
+                else pathFound = true
+            }
+
+            if (pathArr[0].startsWith('{') && pathArr[0].endsWith('}')) {
+                pathParameters = {
+                    ...(pathParameters ?? {}),
+                    [pathArr[0].substring(1, pathArr[0].length - 1)]:
+                        currentPathArr[0],
+                }
+                pathFound = true
             }
 
             return (
@@ -149,6 +177,7 @@ export const processRoutes = ({
         callbacks,
         onComplete,
         onError,
+        pathParameters,
         source,
         truncatedPath:
             currentPath.length === path.length

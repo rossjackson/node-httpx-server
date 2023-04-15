@@ -21,12 +21,14 @@ class StreamRouter {
         currentPath,
         onComplete,
         onError,
+        pathParameters,
         source,
     }: Omit<ProcessRoutesProps, 'routers'>) => {
         processRoutes({
             currentPath,
             onComplete,
             onError,
+            pathParameters,
             routers: this.routers,
             source,
         })

@@ -1,17 +1,12 @@
 import { Http2Server, ServerHttp2Stream, constants } from 'http2'
-import {
-    RoutersValueType,
-    StreamRouterCallbackType,
-    processRoutes,
-} from './helpers'
-import StreamRouter from './streamRouter'
+import { RoutersValueType, processRoutes } from './helpers'
 
 export interface CompleteProps {
     message?: string
     stream: ServerHttp2Stream
 }
 
-export interface ErrorProps<TError = Error> {
+export interface ErrorProps<TError extends Error> {
     error: TError
     stream: ServerHttp2Stream
 }
@@ -19,7 +14,10 @@ export interface ErrorProps<TError = Error> {
 export interface HttpxServerProps {
     httpxServer: Http2Server
     onComplete?: ({ message, stream }: CompleteProps) => void
-    onError?: <TError = Error>({ error, stream }: ErrorProps<TError>) => void
+    onError?: <TError extends Error>({
+        error,
+        stream,
+    }: ErrorProps<TError>) => void
     port?: number
     hostname?: string
 }
@@ -28,7 +26,7 @@ class HttpxServer {
     private httpxServer: Http2Server
     private routers: Map<[string, string?], RoutersValueType[]>
     complete: ({ message, stream }: CompleteProps) => void
-    error: <TError = Error>({ error, stream }: ErrorProps<TError>) => void
+    error: <TError extends Error>({ error, stream }: ErrorProps<TError>) => void
     port: number
     hostname: string
 
@@ -78,10 +76,7 @@ class HttpxServer {
         })
     }
 
-    router = (
-        path: string,
-        ...callbacks: (StreamRouter | StreamRouterCallbackType)[]
-    ) => {
+    router = (path: string, ...callbacks: RoutersValueType[]) => {
         this.routers.set([path], callbacks)
     }
 }

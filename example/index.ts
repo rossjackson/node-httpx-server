@@ -10,7 +10,7 @@ const handleComplete = ({ stream, message }: CompleteProps) => {
     stream.end(message)
 }
 
-const handleError = <TError = Error>({ error, stream }: ErrorProps<TError>) => {
+const handleError = ({ error, stream }: ErrorProps<Error>) => {
     if (error instanceof Error) {
         if (error.name === routerError.NOT_FOUND) {
             stream.respond({
