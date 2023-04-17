@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch via NPM",
+            "name": "Launch sample",
             "request": "launch",
             "runtimeArgs": ["run", "dev"],
             "runtimeExecutable": "npm",
@@ -13,7 +13,7 @@
             "type": "node"
         },
         {
-            "name": "launch test",
+            "name": "Launch test",
             "request": "launch",
             "program": "${workspaceFolder}/node_modules/.bin/jest",
             "console": "integratedTerminal",

@@ -104,13 +104,67 @@ export const recurseCallbacks = ({
     })
 }
 
+export interface IncomingContainsRouterPathProps {
+    incomingPath: string
+    routerPath: string
+}
+
+export const incomingContainsRouterPath = ({
+    incomingPath,
+    routerPath,
+}: IncomingContainsRouterPathProps): boolean => {
+    if (!incomingPath || !routerPath) return false
+
+    const incomingPathArr = incomingPath.split('/').slice(1)
+    const routerPathArr = routerPath.split('/').slice(1)
+
+    if (
+        incomingPathArr.length !== routerPathArr.length &&
+        routerPathArr.length > incomingPathArr.length
+    )
+        return false
+
+    return routerPathArr.every(
+        (currentRouterPathValue, idx) =>
+            (currentRouterPathValue.startsWith('{') &&
+                currentRouterPathValue.endsWith('}')) ||
+            incomingPathArr[idx] === currentRouterPathValue
+    )
+}
+
+export type RouterKeyType = [string, string?]
+
 export interface ProcessRoutesProps {
     currentPath: string
     onComplete: (props: CompleteProps) => void
     onError: <TError extends Error>(props: ErrorProps<TError>) => void
     pathParameters?: PathParametersType
-    routers: Map<[string, string?], RoutersValueType[]>
+    routers: Map<RouterKeyType, RoutersValueType[]>
     source: StreamSourceProps
+}
+
+export interface GetRouteEntryProps {
+    currentPath: string
+    routersArray: [RouterKeyType, RoutersValueType[]][]
+    source: StreamSourceProps
+}
+
+export const getRouteEntry = ({
+    currentPath,
+    routersArray,
+    source,
+}: GetRouteEntryProps): [RouterKeyType, RoutersValueType[]] | undefined => {
+    return routersArray.find(([[path, method]]) => {
+        const routerPathFound = incomingContainsRouterPath({
+            incomingPath: currentPath,
+            routerPath: path,
+        })
+        return (
+            routerPathFound &&
+            (!method ||
+                source.headers[constants.HTTP2_HEADER_METHOD] === method)
+        )
+    })
 }
 
 export const processRoutes = ({
@@ -121,45 +175,11 @@ export const processRoutes = ({
     routers,
     source,
 }: ProcessRoutesProps) => {
-    const routeEntry = [...routers.entries()].find(
-        ([[path, method], callbacks]) => {
-            let pathFound = false
-
-            const currentPathArr = currentPath.split('/').slice(1)
-            const pathArr = path.split('/').slice(1)
-
-            /**
-             * If currentPath contains key path from router, check if its a nested route
-             * If nestedRoute, return true (let the next recurse handle it)
-             * else check if current path is the exact route for path
-             */
-            if (currentPathArr[0] === pathArr[0]) {
-                let nestedRoute = callbacks.some(
-                    (callback) => callback instanceof StreamRouter
-                )
-
-                if (!nestedRoute)
-                    // must be an exact route
-                    pathFound = currentPath.length === pathArr.length
-                else pathFound = true
-            }
-
-            if (pathArr[0].startsWith('{') && pathArr[0].endsWith('}')) {
-                pathParameters = {
-                    ...(pathParameters ?? {}),
-                    [pathArr[0].substring(1, pathArr[0].length - 1)]:
-                        currentPathArr[0],
-                }
-                pathFound = true
-            }
-
-            return (
-                pathFound &&
-                (!method ||
-                    source.headers[constants.HTTP2_HEADER_METHOD] === method)
-            )
-        }
-    )
+    const routeEntry = getRouteEntry({
+        currentPath,
+        routersArray: [...routers.entries()],
+        source,
+    })
 
     if (!routeEntry) {
         const notFoundError = new Error('Not found')

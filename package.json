@@ -4,7 +4,7 @@
     "description": "A node http2 and beyond server dealing with streams",
     "main": "index.ts",
     "scripts": {
-        "jest": "jest",
+        "test": "NODE_OPTIONS=--experimental-vm-modules jest",
         "dev": "ts-node-dev --respawn --pretty --transpile-only ./example/index.ts"
     },
     "keywords": [],
