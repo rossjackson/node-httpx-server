@@ -3,20 +3,30 @@ import { auth } from '../middlewares/auth'
 
 const usersRouter = new StreamRouter()
 
-usersRouter.get('/', auth, ({ source, pathParameters, complete }) => {
-    const { stream } = source
-    console.log('pathParameters', pathParameters)
-    stream.write('inside userRouter', () => {
-        complete()
-    })
-})
+usersRouter.get(
+    '/',
+    auth,
+    ({ source, pathParameters, searchParams, complete }) => {
+        const { stream } = source
+        console.log('pathParameters', pathParameters)
+        console.log('searchParams', searchParams)
+        stream.write('inside userRouter', () => {
+            complete()
+        })
+    }
+)
 
-usersRouter.get('/{id}', auth, async ({ source, pathParameters, complete }) => {
-    const { stream } = source
-    console.log('pathParameters', pathParameters)
-    stream.write('inside usersRouter', () => {
-        complete()
-    })
-})
+usersRouter.get(
+    '/{id}',
+    auth,
+    async ({ source, pathParameters, searchParams, complete }) => {
+        const { stream } = source
+        console.log('pathParameters', pathParameters)
+        console.log('searchParams', searchParams)
+        stream.write('inside usersRouter', () => {
+            complete()
+        })
+    }
+)
 
 export default usersRouter

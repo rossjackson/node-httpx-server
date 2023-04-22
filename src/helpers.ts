@@ -29,8 +29,9 @@ export interface StreamRouterCallbackProps {
     complete: (message?: string) => void
     error: <TError extends Error>(props: TError) => void
     next: VoidFunction
-    source: StreamSourceProps
     pathParameters?: PathParametersType
+    searchParams?: URLSearchParams
+    source: StreamSourceProps
 }
 
 export type StreamRouterCallbackType = (
@@ -44,6 +45,7 @@ export interface HttpxServerRecurseCallbacksProps {
     onComplete: (props: CompleteProps) => void
     onError: <TError extends Error>(props: ErrorProps<TError>) => void
     pathParameters?: PathParametersType
+    searchParams?: URLSearchParams
     source: StreamSourceProps
     truncatedPath: string
 }
@@ -53,6 +55,7 @@ export const recurseCallbacks = ({
     onComplete,
     onError,
     pathParameters,
+    searchParams,
     source,
     truncatedPath,
 }: HttpxServerRecurseCallbacksProps) => {
@@ -68,6 +71,7 @@ export const recurseCallbacks = ({
                 onComplete,
                 onError,
                 pathParameters,
+                searchParams,
                 source,
             })
             return
@@ -79,6 +83,7 @@ export const recurseCallbacks = ({
             onComplete,
             onError,
             pathParameters,
+            searchParams,
             source,
             truncatedPath,
         })
@@ -90,6 +95,7 @@ export const recurseCallbacks = ({
             onComplete,
             onError,
             pathParameters,
+            searchParams,
             source,
         })
         return
@@ -100,6 +106,7 @@ export const recurseCallbacks = ({
         error: handleError,
         next: handleNext,
         pathParameters,
+        searchParams,
         source,
     })
 }
@@ -155,6 +162,7 @@ export interface ProcessRoutesProps {
     onError: <TError extends Error>(props: ErrorProps<TError>) => void
     pathParameters?: PathParametersType
     routers: Map<RouterKeyType, RoutersValueType[]>
+    searchParams?: URLSearchParams
     source: StreamSourceProps
 }
 
@@ -196,6 +204,7 @@ export const processRoutes = ({
     onError,
     pathParameters,
     routers,
+    searchParams,
     source,
 }: ProcessRoutesProps) => {
     if (!currentPath || currentPath.indexOf('/') === -1) {
@@ -209,6 +218,12 @@ export const processRoutes = ({
             stream: source.stream,
         })
         return
+    }
+
+    if (currentPath.indexOf('?') > -1) {
+        const searchSplitArr = currentPath.split('?')
+        currentPath = searchSplitArr[0]
+        searchParams = new URLSearchParams(searchSplitArr[1])
     }
 
     const incomingPathArr = currentPath.split('/').slice(1)
@@ -248,6 +263,7 @@ export const processRoutes = ({
         onComplete,
         onError,
         pathParameters,
+        searchParams,
         source,
         truncatedPath,
     })
