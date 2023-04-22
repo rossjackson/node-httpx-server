@@ -5,7 +5,7 @@ const usersRouter = new StreamRouter()
 
 usersRouter.get('/', auth, ({ source, pathParameters, complete }) => {
     const { stream } = source
-    console.log('test', pathParameters)
+    console.log('pathParameters', pathParameters)
     stream.write('inside userRouter', () => {
         complete()
     })
@@ -13,7 +13,7 @@ usersRouter.get('/', auth, ({ source, pathParameters, complete }) => {
 
 usersRouter.get('/{id}', auth, async ({ source, pathParameters, complete }) => {
     const { stream } = source
-    console.log(pathParameters?.id)
+    console.log('pathParameters', pathParameters)
     stream.write('inside usersRouter', () => {
         complete()
     })
