@@ -1,19 +1,19 @@
 import {
     MethodType,
     ProcessRoutesProps,
-    RoutersValueType,
+    StreamRouterCallbackType,
     processRoutes,
 } from './helpers'
 
 class StreamRouter {
-    routers: Map<[string, string], RoutersValueType[]>
+    routers: Map<[string, string], StreamRouterCallbackType[]>
     constructor() {
-        this.routers = new Map<[string, string], RoutersValueType[]>()
+        this.routers = new Map<[string, string], StreamRouterCallbackType[]>()
     }
 
     generateRoute =
         (method: MethodType) =>
-        (path: string, ...callbacks: RoutersValueType[]) => {
+        (path: string, ...callbacks: StreamRouterCallbackType[]) => {
             this.routers.set([path, method], callbacks)
         }
 

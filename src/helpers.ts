@@ -105,18 +105,15 @@ export const recurseCallbacks = ({
 }
 
 export interface IncomingContainsRouterPathProps {
-    incomingPath: string
-    routerPath: string
+    incomingPathArr: string[]
+    routerPathArr: string[]
 }
 
 export const incomingContainsRouterPath = ({
-    incomingPath,
-    routerPath,
+    incomingPathArr,
+    routerPathArr,
 }: IncomingContainsRouterPathProps): boolean => {
-    if (!incomingPath || !routerPath) return false
-
-    const incomingPathArr = incomingPath.split('/').slice(1)
-    const routerPathArr = routerPath.split('/').slice(1)
+    if (!incomingPathArr.length || !routerPathArr.length) return false
 
     if (
         incomingPathArr.length !== routerPathArr.length &&
@@ -132,6 +129,24 @@ export const incomingContainsRouterPath = ({
     )
 }
 
+export interface GetPathParametersProps {
+    incomingPathArr: string[]
+    routePathArr: string[]
+}
+
+export const getPathParameters = ({
+    incomingPathArr,
+    routePathArr,
+}: GetPathParametersProps): PathParametersType => {
+    let pathParameter: PathParametersType = {}
+    routePathArr.forEach((routePath, idx) => {
+        if (!routePath.startsWith('{') || !routePath.endsWith('}')) return
+        pathParameter[routePath.substring(1, routePath.length - 1)] =
+            incomingPathArr[idx]
+    })
+    return pathParameter
+}
+
 export type RouterKeyType = [string, string?]
 
 export interface ProcessRoutesProps {
@@ -144,27 +159,35 @@ export interface ProcessRoutesProps {
 }
 
 export interface GetRouteEntryProps {
-    currentPath: string
+    incomingPathArr: string[]
     routersArray: [RouterKeyType, RoutersValueType[]][]
     source: StreamSourceProps
 }
 
 export const getRouteEntry = ({
-    currentPath,
+    incomingPathArr,
     routersArray,
     source,
 }: GetRouteEntryProps): [RouterKeyType, RoutersValueType[]] | undefined => {
-    return routersArray.find(([[path, method]]) => {
+    const routeEntry = routersArray.find(([[path, method]]) => {
+        if (!incomingPathArr.length || !path || path.indexOf('/') === -1)
+            return false
+
+        const routerPathArr = path.split('/').slice(1)
+
         const routerPathFound = incomingContainsRouterPath({
-            incomingPath: currentPath,
-            routerPath: path,
+            incomingPathArr,
+            routerPathArr,
         })
+
         return (
             routerPathFound &&
             (!method ||
                 source.headers[constants.HTTP2_HEADER_METHOD] === method)
         )
     })
+
+    return routeEntry
 }
 
 export const processRoutes = ({
@@ -175,8 +198,23 @@ export const processRoutes = ({
     routers,
     source,
 }: ProcessRoutesProps) => {
+    if (!currentPath || currentPath.indexOf('/') === -1) {
+        const serverError = new Error('Server error')
+        serverError.name = routerError.SERVER_ERROR
+        console.error(
+            'Malformed currentPath.  Must include current path with /'
+        )
+        onError({
+            error: serverError,
+            stream: source.stream,
+        })
+        return
+    }
+
+    const incomingPathArr = currentPath.split('/').slice(1)
+
     const routeEntry = getRouteEntry({
-        currentPath,
+        incomingPathArr,
         routersArray: [...routers.entries()],
         source,
     })
@@ -189,6 +227,14 @@ export const processRoutes = ({
             stream: source.stream,
         })
         return
+    }
+
+    pathParameters = {
+        ...pathParameters,
+        ...getPathParameters({
+            incomingPathArr,
+            routePathArr: routeEntry[0][0].split('/').slice(1),
+        }),
     }
 
     const [[path], callbacks] = routeEntry

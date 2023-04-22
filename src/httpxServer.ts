@@ -1,5 +1,5 @@
 import { Http2Server, ServerHttp2Stream, constants } from 'http2'
-import { RoutersValueType, processRoutes } from './helpers'
+import { RoutersValueType, StreamSourceProps, processRoutes } from './helpers'
 
 export interface CompleteProps {
     message?: string
@@ -11,6 +11,12 @@ export interface ErrorProps<TError extends Error> {
     stream: ServerHttp2Stream
 }
 
+export interface OnPreServeProps {
+    error: <TError extends Error>(props: TError) => void
+    next: VoidFunction
+    source: StreamSourceProps
+}
+
 export interface HttpxServerProps {
     httpxServer: Http2Server
     onComplete?: ({ message, stream }: CompleteProps) => void
@@ -18,15 +24,22 @@ export interface HttpxServerProps {
         error,
         stream,
     }: ErrorProps<TError>) => void
+    onPreServe?: ({ error, next, source }: OnPreServeProps) => void
     port?: number
     hostname?: string
+}
+
+interface StartServeProps {
+    source: StreamSourceProps
 }
 
 class HttpxServer {
     private httpxServer: Http2Server
     private routers: Map<[string, string?], RoutersValueType[]>
+
     complete: ({ message, stream }: CompleteProps) => void
     error: <TError extends Error>({ error, stream }: ErrorProps<TError>) => void
+    onPreServe?: ({ error, next, source }: OnPreServeProps) => void
     port: number
     hostname: string
 
@@ -38,6 +51,7 @@ class HttpxServer {
         onError = ({ error, stream }) => {
             stream.end((error as Error).message)
         },
+        onPreServe,
         port = 8080,
         hostname = 'localhost',
     }: HttpxServerProps) {
@@ -45,34 +59,49 @@ class HttpxServer {
         this.routers = new Map<[string], RoutersValueType[]>()
         this.complete = onComplete
         this.error = onError
+        this.onPreServe = onPreServe
         this.port = port
         this.hostname = hostname
     }
 
     serve = () => {
         this.httpxServer.on('stream', (stream, headers, flags) => {
-            const headerPath = headers[constants.HTTP2_HEADER_PATH] as
-                | string
-                | undefined
-            if (!headerPath) {
-                this.error({
-                    error: new Error(':path missing'),
-                    stream,
-                })
-
+            const source = { stream, headers, flags }
+            if (!this.onPreServe) {
+                this.startServe({ source })
                 return
             }
-            processRoutes({
-                currentPath: headerPath,
-                onComplete: this.complete,
-                onError: this.error,
-                routers: this.routers,
-                source: { flags, headers, stream },
+
+            this.onPreServe({
+                error: (err) => this.error({ error: err, stream }),
+                next: () => this.startServe({ source }),
+                source,
             })
         })
 
         this.httpxServer.listen(this.port, this.hostname, () => {
             console.info(`Server running on ${this.hostname}:${this.port}`)
+        })
+    }
+
+    startServe = ({ source }: StartServeProps) => {
+        const headerPath = source.headers[constants.HTTP2_HEADER_PATH] as
+            | string
+            | undefined
+        if (!headerPath) {
+            this.error({
+                error: new Error(':path missing'),
+                stream: source.stream,
+            })
+
+            return
+        }
+        processRoutes({
+            currentPath: headerPath,
+            onComplete: this.complete,
+            onError: this.error,
+            routers: this.routers,
+            source,
         })
     }
 

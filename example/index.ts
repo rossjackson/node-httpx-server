@@ -6,7 +6,7 @@ import companiesRouter from './routers/CompanyRouter'
 import usersRouter from './routers/UserRouter'
 
 const handleComplete = ({ stream, message }: CompleteProps) => {
-    console.log(`Complete: ${message}`)
+    console.log(`Complete: ${message ?? 'no message'}`)
     stream.end(message)
 }
 
@@ -27,10 +27,22 @@ const handleError = ({ error, stream }: ErrorProps<Error>) => {
     stream.end(JSON.stringify(error))
 }
 
+// // If you want to handle something prior to the stream getting served
+
+// const handlePreServe = ({ error, next, source }: OnPreServeProps) => {
+//     console.log(`HandlePreServe headers: ${JSON.stringify(source.headers)}`)
+//     source.stream.respond({
+//         [constants.HTTP2_HEADER_STATUS]:
+//             constants.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+//     })
+//     error(new Error('I want to stop'))
+// }
+
 const httpxServer = new HttpxServer({
     httpxServer: http2.createServer(),
     onComplete: handleComplete,
     onError: handleError,
+    // onPreServe: handlePreServe,
 })
 
 httpxServer.router('/users', usersRouter)

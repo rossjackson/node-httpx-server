@@ -1,81 +1,114 @@
 import * as Helpers from './helpers'
 
 describe('incomingContainsRouterPath', () => {
-    it('should return falsy when incomingPath is an empty string', () => {
-        const incomingPath = ''
-        const routerPath = '/user/{id}'
+    it('should return falsy when incomingPathArr is an empty string array', () => {
+        const incomingPathArr: string[] = []
+        const routerPathArr: string[] = ['users', '{id}']
 
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeFalsy()
     })
 
-    it('should return falsy when routerPath is an empty string', () => {
-        const incomingPath = '/user'
-        const routerPath = ''
+    it('should return falsy when routerPathArr is an empty string array', () => {
+        const incomingPathArr: string[] = ['users', '1234']
+        const routerPathArr: string[] = []
 
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeFalsy()
     })
 
-    it('should return falsy when routerPath value is longer than the incomingPath value', () => {
-        const incomingPath = '/user'
-        const routerPath = '/user/{id}'
+    it('should return falsy when routerPathArr value is longer than the incomingPathArr length', () => {
+        const incomingPathArr: string[] = ['users']
+        const routerPathArr: string[] = ['users', '{id}']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeFalsy()
     })
 
-    it('should return truthy when routerPath value is the same exact incomingPath value', () => {
-        const incomingPath = '/user'
-        const routerPath = '/user'
+    it('should return truthy when routerPathArr value is the same exact incomingPathArr value', () => {
+        const incomingPathArr: string[] = ['users']
+        const routerPathArr: string[] = ['users']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeTruthy()
     })
 
-    it('should return truthy when incomingPath value is longer but contains routerPath value', () => {
-        const incomingPath = '/user/1234/addresses/4321'
-        const routerPath = '/user'
+    it('should return truthy when incomingPathArr value is longer but contains routerPathArr value', () => {
+        const incomingPathArr = ['users', '1234', 'addresses', '4321']
+        const routerPathArr = ['users']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeTruthy()
     })
 
-    it('should return truthy when routerPath value contains pathParameter', () => {
-        const incomingPath = '/user/1234/addresses/4321'
-        let routerPath = '/user/{userId}'
+    it('should return truthy when routerPathArr value contains pathParameter', () => {
+        const incomingPathArr = ['users', '1234', 'addresses', '4321']
+        let routerPathArr = ['users', '{userId}']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeTruthy()
 
-        routerPath = '/user/{userId}/addresses/{addressId}'
+        routerPathArr = ['users', '{userId}', 'addresses', '{addressId}']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeTruthy()
     })
 
     it('should return falsy when incomingPath value does not contain routerPath value', () => {
-        let incomingPath = '/user/1234/addresses/4321'
-        let routerPath = '/companies'
+        const incomingPathArr = ['users', '1234', 'addresses', '4321']
+        let routerPathArr = ['companies']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeFalsy()
 
-        routerPath = '/companies/{companyId}'
+        routerPathArr = ['companies', '{companyId}']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeFalsy()
 
-        routerPath = '/user/{userId}/friends'
+        routerPathArr = ['users', '{userId}', 'friends']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeFalsy()
 
-        routerPath = '/user/{userId}/friends/{friendId}'
+        routerPathArr = ['users', '{userId}', 'friends', '{friendId}']
         expect(
-            Helpers.incomingContainsRouterPath({ incomingPath, routerPath })
+            Helpers.incomingContainsRouterPath({
+                incomingPathArr,
+                routerPathArr,
+            })
         ).toBeFalsy()
     })
 })
@@ -96,10 +129,54 @@ describe('getRouteEntry', () => {
         jest.clearAllMocks()
     })
 
+    it('should return undefined when either incomingPathArr is empty or path are undefined', () => {
+        let expected = Helpers.getRouteEntry({
+            incomingPathArr: [],
+            routersArray: [...sampleRouters],
+            source: {
+                ...mockedStreamSource,
+                headers: {
+                    ':method': 'GET',
+                },
+            },
+        })
+        expect(expected).toBeUndefined()
+
+        sampleRouters.set([''], [mockedStreamRouterCallback])
+
+        expected = Helpers.getRouteEntry({
+            incomingPathArr: ['users'],
+            routersArray: [...sampleRouters],
+            source: {
+                ...mockedStreamSource,
+                headers: {
+                    ':method': 'GET',
+                },
+            },
+        })
+        expect(expected).toBeUndefined()
+    })
+
+    it('should return undefined when path is malformed', () => {
+        sampleRouters.set(['users'], [mockedStreamRouterCallback])
+
+        const expected = Helpers.getRouteEntry({
+            incomingPathArr: ['users'],
+            routersArray: [...sampleRouters],
+            source: {
+                ...mockedStreamSource,
+                headers: {
+                    ':method': 'GET',
+                },
+            },
+        })
+        expect(expected).toBeUndefined()
+    })
+
     it('should return undefined when incomingContainsRouterPath is not found', () => {
         jest.spyOn(Helpers, 'incomingContainsRouterPath').mockReturnValue(false)
         const expected = Helpers.getRouteEntry({
-            currentPath: '/non-existent',
+            incomingPathArr: ['non-existent'],
             routersArray: [...sampleRouters],
             source: {
                 ...mockedStreamSource,
@@ -120,7 +197,7 @@ describe('getRouteEntry', () => {
         jest.spyOn(Helpers, 'incomingContainsRouterPath').mockReturnValue(true)
         const actualRouterKey: Helpers.RouterKeyType = ['/parent-users']
         const expected = Helpers.getRouteEntry({
-            currentPath: actualRouterKey[0],
+            incomingPathArr: actualRouterKey[0].split('/').splice(1),
             routersArray: [...sampleRouters],
             source: {
                 ...mockedStreamSource,
@@ -140,7 +217,7 @@ describe('getRouteEntry', () => {
         jest.spyOn(Helpers, 'incomingContainsRouterPath').mockReturnValue(true)
         const actualRouterKey: Helpers.RouterKeyType = ['/users/{id}', 'GET']
         const expected = Helpers.getRouteEntry({
-            currentPath: actualRouterKey[0],
+            incomingPathArr: actualRouterKey[0].split('/').splice(1),
             routersArray: [...sampleRouters],
             source: {
                 ...mockedStreamSource,
@@ -160,7 +237,7 @@ describe('getRouteEntry', () => {
         jest.spyOn(Helpers, 'incomingContainsRouterPath').mockReturnValue(true)
         const actualRouterKey: Helpers.RouterKeyType = ['/users/{id}', 'GET']
         const expected = Helpers.getRouteEntry({
-            currentPath: actualRouterKey[0],
+            incomingPathArr: actualRouterKey[0].split('/').splice(1),
             routersArray: [...sampleRouters],
             source: {
                 ...mockedStreamSource,
@@ -172,5 +249,84 @@ describe('getRouteEntry', () => {
 
         expect(Helpers.incomingContainsRouterPath).toHaveBeenCalled()
         expect(expected).toBeUndefined()
+    })
+})
+
+describe('getPathParameters', () => {
+    it('should return an empty path parameters when there is no {} path parameter found', () => {
+        const incomingPathArr = ['users', '1234']
+        const routePathArr = ['users']
+
+        const expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toBeTruthy()
+        expect(expected).toStrictEqual({})
+    })
+
+    it('should return an empty path when the route parameter is malformed', () => {
+        const incomingPathArr = ['users', '1234']
+        let routePathArr = ['users']
+
+        let expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toBeTruthy()
+        expect(expected).toStrictEqual({})
+
+        routePathArr = ['users', '{userId']
+        expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({})
+
+        routePathArr = ['users', 'userId}']
+        expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({})
+
+        routePathArr = ['users', 'u{serId}']
+        expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({})
+    })
+
+    it('should return correct path parameters when found', () => {
+        let incomingPathArr = ['users', '1234']
+        let routePathArr = ['users', '{userId}']
+
+        let expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({
+            userId: '1234',
+        })
+
+        incomingPathArr = ['users', '1234', 'address', '4321', 'author', '8744']
+        routePathArr = ['users', '{userId}', 'address', '{addressId}']
+
+        expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({
+            userId: '1234',
+            addressId: '4321',
+        })
     })
 })
