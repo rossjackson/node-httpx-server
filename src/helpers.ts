@@ -229,15 +229,19 @@ export const processRoutes = ({
         return
     }
 
+    const [[path], callbacks] = routeEntry
+    const routePathArr = path.split('/').slice(1)
+
     pathParameters = {
         ...pathParameters,
         ...getPathParameters({
             incomingPathArr,
-            routePathArr: routeEntry[0][0].split('/').slice(1),
+            routePathArr,
         }),
     }
 
-    const [[path], callbacks] = routeEntry
+    const newCurrentPathArr = incomingPathArr.slice(routePathArr.length)
+    const truncatedPath = `/${newCurrentPathArr.join('/')}`
 
     recurseCallbacks({
         callbacks,
@@ -245,9 +249,6 @@ export const processRoutes = ({
         onError,
         pathParameters,
         source,
-        truncatedPath:
-            currentPath.length === path.length
-                ? '/'
-                : currentPath.substring(path.length),
+        truncatedPath,
     })
 }

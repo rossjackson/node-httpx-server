@@ -3,8 +3,9 @@ import { auth } from '../middlewares/auth'
 
 const usersRouter = new StreamRouter()
 
-usersRouter.get('/', auth, ({ source, complete }) => {
+usersRouter.get('/', auth, ({ source, pathParameters, complete }) => {
     const { stream } = source
+    console.log('test', pathParameters)
     stream.write('inside userRouter', () => {
         complete()
     })

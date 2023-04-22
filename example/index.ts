@@ -45,7 +45,7 @@ const httpxServer = new HttpxServer({
     // onPreServe: handlePreServe,
 })
 
-httpxServer.router('/users', usersRouter)
+httpxServer.router('/users/{userId}', usersRouter)
 httpxServer.router('/companies', auth, companiesRouter)
 
 httpxServer.serve()
