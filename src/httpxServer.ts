@@ -18,7 +18,7 @@ export interface OnPreServeProps {
 }
 
 export interface HttpxServerProps {
-    httpxServer: Http2Server
+    server: Http2Server
     onComplete?: ({ message, stream }: CompleteProps) => void
     onError?: <TError extends Error>({
         error,
@@ -34,7 +34,7 @@ interface StartServeProps {
 }
 
 class HttpxServer {
-    private httpxServer: Http2Server
+    private server: Http2Server
     private routers: Map<[string, string?], RoutersValueType[]>
 
     complete: ({ message, stream }: CompleteProps) => void
@@ -44,7 +44,7 @@ class HttpxServer {
     hostname: string
 
     constructor({
-        httpxServer,
+        server,
         onComplete = ({ stream, message }) => {
             stream.end(message)
         },
@@ -55,7 +55,7 @@ class HttpxServer {
         port = 8080,
         hostname = 'localhost',
     }: HttpxServerProps) {
-        this.httpxServer = httpxServer
+        this.server = server
         this.routers = new Map<[string], RoutersValueType[]>()
         this.complete = onComplete
         this.error = onError
@@ -65,7 +65,7 @@ class HttpxServer {
     }
 
     serve = () => {
-        this.httpxServer.on('stream', (stream, headers, flags) => {
+        this.server.on('stream', (stream, headers, flags) => {
             const source = { stream, headers, flags }
             if (!this.onPreServe) {
                 this.startServe({ source })
@@ -79,7 +79,7 @@ class HttpxServer {
             })
         })
 
-        this.httpxServer.listen(this.port, this.hostname, () => {
+        this.server.listen(this.port, this.hostname, () => {
             console.info(`Server running on ${this.hostname}:${this.port}`)
         })
     }

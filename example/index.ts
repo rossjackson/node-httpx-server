@@ -39,7 +39,7 @@ const handleError = ({ error, stream }: ErrorProps<Error>) => {
 // }
 
 const httpxServer = new HttpxServer({
-    httpxServer: http2.createServer(),
+    server: http2.createServer(),
     onComplete: handleComplete,
     onError: handleError,
     // onPreServe: handlePreServe,

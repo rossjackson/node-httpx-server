@@ -21,11 +21,6 @@ export type MethodType =
 export type PathParametersType = Record<string, string>
 
 export interface StreamRouterCallbackProps {
-    /**
-     * Calls unload() and stream.end()
-     * @param {string | undefined} message Last message to send out
-     * @returns {void}
-     */
     complete: (message?: string) => void
     error: <TError extends Error>(props: TError) => void
     next: VoidFunction
