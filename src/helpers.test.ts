@@ -1,4 +1,28 @@
 import * as Helpers from './helpers'
+import StreamRouter from './streamRouter'
+
+describe('recurseCallbacks', () => {
+    it('calls streamRouter when it is the callback', () => {
+        const mockedFn = jest.fn
+        let mockedSource: Helpers.StreamSourceProps = {
+            flags: 0,
+            headers: {},
+            stream: {} as any,
+        }
+        const mockedStreamRouter = new StreamRouter()
+        jest.spyOn(mockedStreamRouter, 'process').mockImplementation(mockedFn)
+
+        Helpers.recurseCallbacks({
+            callbacks: [mockedStreamRouter],
+            onComplete: mockedFn,
+            onError: mockedFn,
+            source: mockedSource,
+            truncatedPath: '/',
+        })
+
+        expect(mockedStreamRouter.process).toHaveBeenCalledTimes(1)
+    })
+})
 
 describe('incomingContainsRouterPath', () => {
     it('should return falsy when incomingPathArr is an empty string array', () => {
