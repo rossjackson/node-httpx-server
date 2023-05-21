@@ -1,3 +1,4 @@
+import { routerError } from './constants'
 import * as Helpers from './helpers'
 import StreamRouter from './streamRouter'
 
@@ -21,6 +22,32 @@ describe('recurseCallbacks', () => {
         })
 
         expect(mockedStreamRouter.process).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls the callback method', () => {
+        let called = 0
+        const mockedCallbackFn: Helpers.StreamRouterCallbackType = ({
+            next,
+        }) => {
+            called++
+            next()
+        }
+
+        let mockedSource: Helpers.StreamSourceProps = {
+            flags: 0,
+            headers: {},
+            stream: {} as any,
+        }
+
+        Helpers.recurseCallbacks({
+            callbacks: [mockedCallbackFn, mockedCallbackFn],
+            onComplete: jest.fn,
+            onError: jest.fn,
+            source: mockedSource,
+            truncatedPath: '/',
+        })
+
+        expect(called).toStrictEqual(2)
     })
 })
 
@@ -134,6 +161,85 @@ describe('incomingContainsRouterPath', () => {
                 routerPathArr,
             })
         ).toBeFalsy()
+    })
+})
+
+describe('getPathParameters', () => {
+    it('should return an empty path parameters when there is no {} path parameter found', () => {
+        const incomingPathArr = ['users', '1234']
+        const routePathArr = ['users']
+
+        const expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toBeTruthy()
+        expect(expected).toStrictEqual({})
+    })
+
+    it('should return an empty path when the route parameter is malformed', () => {
+        const incomingPathArr = ['users', '1234']
+        let routePathArr = ['users']
+
+        let expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toBeTruthy()
+        expect(expected).toStrictEqual({})
+
+        routePathArr = ['users', '{userId']
+        expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({})
+
+        routePathArr = ['users', 'userId}']
+        expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({})
+
+        routePathArr = ['users', 'u{serId}']
+        expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({})
+    })
+
+    it('should return correct path parameters when found', () => {
+        let incomingPathArr = ['users', '1234']
+        let routePathArr = ['users', '{userId}']
+
+        let expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({
+            userId: '1234',
+        })
+
+        incomingPathArr = ['users', '1234', 'address', '4321', 'author', '8744']
+        routePathArr = ['users', '{userId}', 'address', '{addressId}']
+
+        expected = Helpers.getPathParameters({
+            incomingPathArr,
+            routePathArr,
+        })
+
+        expect(expected).toStrictEqual({
+            userId: '1234',
+            addressId: '4321',
+        })
     })
 })
 
@@ -276,81 +382,109 @@ describe('getRouteEntry', () => {
     })
 })
 
-describe('getPathParameters', () => {
-    it('should return an empty path parameters when there is no {} path parameter found', () => {
-        const incomingPathArr = ['users', '1234']
-        const routePathArr = ['users']
-
-        const expected = Helpers.getPathParameters({
-            incomingPathArr,
-            routePathArr,
+describe('processRoutes', () => {
+    let mockedSource: Helpers.StreamSourceProps = {
+        flags: 0,
+        headers: {},
+        stream: {} as any,
+    }
+    it('should call onError when it does not have a currentPath', () => {
+        let onErrorCalled = false
+        jest.spyOn(console, 'error').mockReturnValue()
+        Helpers.processRoutes({
+            currentPath: '',
+            onComplete: jest.fn,
+            onError: () => {
+                onErrorCalled = true
+            },
+            routers: new Map(),
+            source: mockedSource,
         })
 
-        expect(expected).toBeTruthy()
-        expect(expected).toStrictEqual({})
+        expect(onErrorCalled).toBeTruthy()
     })
 
-    it('should return an empty path when the route parameter is malformed', () => {
-        const incomingPathArr = ['users', '1234']
-        let routePathArr = ['users']
-
-        let expected = Helpers.getPathParameters({
-            incomingPathArr,
-            routePathArr,
+    it('should call onError when currentPath is missing a forward slash', () => {
+        let onErrorCalled = false
+        jest.spyOn(console, 'error').mockReturnValue()
+        Helpers.processRoutes({
+            currentPath: 'users',
+            onComplete: jest.fn,
+            onError: () => {
+                onErrorCalled = true
+            },
+            routers: new Map(),
+            source: mockedSource,
         })
 
-        expect(expected).toBeTruthy()
-        expect(expected).toStrictEqual({})
-
-        routePathArr = ['users', '{userId']
-        expected = Helpers.getPathParameters({
-            incomingPathArr,
-            routePathArr,
-        })
-
-        expect(expected).toStrictEqual({})
-
-        routePathArr = ['users', 'userId}']
-        expected = Helpers.getPathParameters({
-            incomingPathArr,
-            routePathArr,
-        })
-
-        expect(expected).toStrictEqual({})
-
-        routePathArr = ['users', 'u{serId}']
-        expected = Helpers.getPathParameters({
-            incomingPathArr,
-            routePathArr,
-        })
-
-        expect(expected).toStrictEqual({})
+        expect(onErrorCalled).toBeTruthy()
     })
 
-    it('should return correct path parameters when found', () => {
-        let incomingPathArr = ['users', '1234']
-        let routePathArr = ['users', '{userId}']
+    it('should call onError with Not found message when route is not found', () => {
+        let onErrorCalled = false
+        let actualError: Error | undefined = undefined
 
-        let expected = Helpers.getPathParameters({
-            incomingPathArr,
-            routePathArr,
+        const expectedErrorMessage = 'Not found'
+
+        jest.spyOn(Helpers, 'getRouteEntry').mockReturnValue(undefined)
+        Helpers.processRoutes({
+            currentPath: '/users',
+            onComplete: jest.fn,
+            onError: ({ error }) => {
+                onErrorCalled = true
+                actualError = error
+            },
+            routers: new Map(),
+            source: mockedSource,
         })
 
-        expect(expected).toStrictEqual({
-            userId: '1234',
+        expect(onErrorCalled).toBeTruthy()
+        expect(actualError).toBeTruthy()
+        expect(actualError!.message).toStrictEqual(expectedErrorMessage)
+        expect(actualError!.name).toStrictEqual(routerError.NOT_FOUND)
+    })
+
+    it('should process routes successfully by iterating through the callbacks', () => {
+        jest.spyOn(Helpers, 'getRouteEntry').mockReturnValue([
+            ['users'],
+            [jest.fn],
+        ])
+        jest.spyOn(Helpers, 'getPathParameters').mockReturnValue({})
+        jest.spyOn(Helpers, 'recurseCallbacks').mockReturnValue()
+        Helpers.processRoutes({
+            currentPath: '/users',
+            onComplete: jest.fn,
+            onError: jest.fn,
+            routers: new Map(),
+            source: mockedSource,
         })
 
-        incomingPathArr = ['users', '1234', 'address', '4321', 'author', '8744']
-        routePathArr = ['users', '{userId}', 'address', '{addressId}']
+        expect(Helpers.recurseCallbacks).toHaveBeenCalled()
+    })
 
-        expected = Helpers.getPathParameters({
-            incomingPathArr,
-            routePathArr,
+    it('should properly add search parameters when found in currentPath', () => {
+        jest.spyOn(Helpers, 'getRouteEntry').mockReturnValue([
+            ['users'],
+            [jest.fn],
+        ])
+        jest.spyOn(Helpers, 'getPathParameters').mockReturnValue({})
+        let actualSearchParams: URLSearchParams | undefined = undefined
+        jest.spyOn(Helpers, 'recurseCallbacks').mockImplementation(
+            ({ searchParams }) => {
+                actualSearchParams = searchParams
+            }
+        )
+
+        Helpers.processRoutes({
+            currentPath: '/users?userId=1234',
+            onComplete: jest.fn,
+            onError: jest.fn,
+            routers: new Map(),
+            source: mockedSource,
         })
 
-        expect(expected).toStrictEqual({
-            userId: '1234',
-            addressId: '4321',
-        })
+        expect(Helpers.recurseCallbacks).toHaveBeenCalled()
+        expect(actualSearchParams).toBeTruthy()
+        expect(actualSearchParams!.get('userId')).toStrictEqual('1234')
     })
 })
