@@ -1,0 +1,10 @@
+{
+    "name": "node-httpx-server",
+    "version": "0.1.0",
+    "main": "dist/index.js",
+    "devDependencies": {},
+    "scripts": {
+      "build": "tsc --project tsconfig.json",
+      "dev": "ts-node-dev --respawn --pretty --transpile-only ./example/index.ts"
+    }
+  }

@@ -1,0 +1,11 @@
+{
+    "name": "sample",
+    "version": "0.1.0",
+    "main": "dist/index.js",
+    "scripts": {
+      "dev": "ts-node-dev --respawn --pretty --transpile-only ./src/index.ts"
+    },
+    "dependencies": {
+        "node-httpx-server": "*"
+    }
+  }
