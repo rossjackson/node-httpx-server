@@ -2,5 +2,5 @@
 
 This is a monorepo.
 
--   [node-httpx-server](./app/README.md)
+-   [node-httpx-server](./app/node-httpx-server/README.md)
 -   [sample](./app/sample/README.md)
