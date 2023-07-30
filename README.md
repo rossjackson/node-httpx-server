@@ -1,2 +1,6 @@
 # node-httpx-server
-A node http2 and beyond server dealing with streams
+
+This is a monorepo.
+
+-   [node-httpx-server](./app/README.md)
+-   [sample](./app/sample/README.md)

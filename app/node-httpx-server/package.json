@@ -1,6 +1,6 @@
 {
     "name": "node-httpx-server",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "main": "dist/index.js",
     "description": "A node http2 and beyond server dealing with streams",
     "license": "ISC",
@@ -12,6 +12,7 @@
     "devDependencies": {},
     "scripts": {
         "build": "tsc --project tsconfig.json",
-        "dev": "ts-node-dev --respawn --pretty --transpile-only ./example/index.ts"
+        "dev": "ts-node-dev --respawn --pretty --transpile-only ./example/index.ts",
+        "publish": "npm run build && npm publish"
     }
 }

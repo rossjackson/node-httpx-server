@@ -1,5 +1,5 @@
 import { constants } from 'http2'
-import { StreamRouterCallbackProps } from '../../src/helpers'
+import { StreamRouterCallbackProps } from 'node-httpx-server'
 
 export const auth = ({ source, next, complete }: StreamRouterCallbackProps) => {
     const authorized = true
