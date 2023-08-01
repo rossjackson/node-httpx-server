@@ -2,12 +2,18 @@
     "name": "node-httpx-server",
     "version": "0.1.2",
     "main": "dist/index.js",
-    "description": "A node http2 and beyond server dealing with streams",
+    "description": "A node HTTP/2 server and beyond dealing with streams",
     "license": "ISC",
     "author": {
         "name": "Ross Jackson",
         "url": "https://github.com/rossjackson"
     },
+    "keywords": [
+        "HTTP/2",
+        "Node",
+        "API",
+        "Server"
+    ],
     "homepage": "https://github.com/rossjackson/node-httpx-server",
     "devDependencies": {},
     "scripts": {

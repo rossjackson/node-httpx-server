@@ -237,3 +237,36 @@ usersRouter.post('/add', auth, async ({ source, complete, error }) => {
 
 export default usersRouter
 ````
+
+## Client Call
+
+Your client must also be using HTTP/2. A sample call with HTTP2
+
+```js
+import http2 from 'http2'
+import fs from 'node:fs'
+const client = http2.connect('http://localhost:8080')
+
+client.on('error', (err) => console.error(err))
+
+const req = client.request({ ':path': '/' })
+
+req.on('response', (headers, flags) => {
+    for (const name in headers) {
+        console.log(`${name}: ${headers[name]}`)
+    }
+})
+
+req.setEncoding('utf8')
+let data = ''
+req.on('data', (chunk) => {
+    data += chunk
+})
+req.on('end', () => {
+    console.log(`\n${data}`)
+    client.close()
+})
+req.end()
+```
+
+Read more about node HTTP2 [here](https://nodejs.org/api/http2.html#http2).
