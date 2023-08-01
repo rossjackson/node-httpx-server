@@ -1,6 +1,6 @@
 {
     "name": "node-httpx-server",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "main": "dist/index.js",
     "description": "A node HTTP/2 server and beyond dealing with streams",
     "license": "ISC",
