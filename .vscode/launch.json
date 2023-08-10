@@ -7,8 +7,8 @@
         {
             "name": "Launch sample",
             "request": "launch",
-            "runtimeArgs": ["run", "dev"],
-            "runtimeExecutable": "npm",
+            "runtimeArgs": ["nx", "dev", "sample"],
+            "runtimeExecutable": "npx",
             "skipFiles": ["<node_internals>/**"],
             "type": "node"
         },
